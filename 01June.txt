@@ -1,0 +1,141 @@
+id,FirstName,LastName,Sports,City,Country
+1001,Emerry,Blair,Basketball,Qutubullapur,San_Marino
+1002,Zephr,Stephenson,Cricket,Neerharen,Dominican_Republic
+1003,Autumn,Bean,Basketball,Neerharen,Dominican_Republic
+1004,Kasimir,Vance,Badminton,Neerharen,Dominican_Republic
+1005,Mufutau,Flores,,Qutubullapur,San_Marino
+1006,Ayanna,Banks,Football,Neerharen,Dominican_Republic
+1007,Selma,Ball,Tennis,Qutubullapur,San_Marino
+1008,Berk,Fuller,Badminton,Neerharen,Dominican_Republic
+1009,Imogene,Terrell,,Qutubullapur,San_Marino
+1010,Colorado,Hutchinson,Tennis,Qutubullapur,San_Marino
+
+
+
+CREATE TABLE employee_base (
+ empid INT,
+ firstname STRING,
+ lastname STRING,
+ sports STRING,
+ city STRING,
+ country STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+TBLPROPERTIES("skip.header.line.count"="1");
+
+
+LOAD DATA LOCAL INPATH '/home/hduser/demo_1/employee_base' INTO TABLE employee_base;
+
+
+CREATE TABLE bucketed_tbl_only (
+ empid INT,
+ firstname STRING,
+ lastname STRING,
+ sports STRING,
+ city STRING,
+ Country STRING
+)
+CLUSTERED BY (empid)
+SORTED BY (empid ASC) INTO 4 BUCKETS;
+
+
+SET hive.enforce.bucketing=TRUE; 
+
+
+
+SET hive.enforce.bucketing=TRUE; 
+INSERT OVERWRITE TABLE bucketed_tbl_only SELECT * FROM employee_base;
+
+
+select * from bucketed_tbl_only TABLESAMPLE(BUCKET 1 OUT OF 4 ON empid);
+
+
+select * from bucketed_tbl_only TABLESAMPLE(BUCKET 3 OUT OF 4 ON empid);
+
+select * from bucketed_tbl_only TABLESAMPLE(BUCKET 3 OUT OF 4 ON empid) where empid = 1006;
+
+
+Q-1 Create 5 buckets of the Olympic2020 table based on the age of the player
+
+
+CREATE EXTERNAL TABLE IF NOT EXISTS partition_olympic_games(
+name STRING,
+age INT,
+year INT,
+closing_date STRING,
+game STRING,
+gold INT,
+silver INT,
+bronze INT,
+total INT
+) PARTITIONED BY(country STRING)
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+TBLPROPERTIES("skip.header.line.count"="1");
+
+drop table bucketed_olympic ;
+
+CREATE TABLE bucketed_olympic (
+ name STRING,
+age INT,
+country string,
+year INT,
+closing_date STRING,
+game STRING,
+gold INT,
+silver INT,
+bronze INT,
+total INT
+)
+CLUSTERED BY (age)
+SORTED BY (age ASC) INTO 5 BUCKETS;
+
+SET hive.enforce.bucketing=TRUE; 
+INSERT OVERWRITE TABLE bucketed_olympic SELECT * FROM olympic2020;
+
+Q-4; Write a query to display all the data of a bucket in which the data of players of 30 years of age exist
+
+select * from bucketed_olympic TABLESAMPLE(BUCKET 1 OUT OF 5 ON age) where age = 30;
+select name, age, total from bucketed_olympic TABLESAMPLE(BUCKET 1 OUT OF 5 ON age) where age = 30;
+
+
+Q-5; Using the same olympic_data.csv data, create an external hive table as well as load the data
+
+
+CREATE EXTERNAL TABLE IF NOT EXISTS olympic_ext( name STRING,
+age INT,
+country string,
+year INT,
+closing_date STRING,
+game STRING,
+gold INT,
+silver INT,
+bronze INT,
+total INT)
+COMMENT 'Olympic_ext details'
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+LOCATION '/pga28_4'
+TBLPROPERTIES("skip.header.line.count"="1");
+
+
+CREATE EXTERNAL TABLE IF NOT EXISTS olympice_ext(name String,age int, country String, 
+year int, closing_date String, game String, gold int, silver int, bronze int, total int)
+COMMENT 'Olympic_Games_Details'
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+LOCATION '/pga28_4'
+TBLPROPERTIES("skip.header.line.count"="1");
+
+
+
+show create table employee_ext;
